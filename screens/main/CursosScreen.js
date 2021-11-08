@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
-import { Button, StyleSheet, Text, View, TextInput, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TextInput, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import { color, event, set } from 'react-native-reanimated';
+
 
 
 const CursosScreen = ({ navigation, route }) => {
@@ -9,16 +9,13 @@ const CursosScreen = ({ navigation, route }) => {
     const [mEvents, onChageEvents] = useState([]);
     const [isLoading, setLoading] = useState(true);
 
-
-
     useEffect(() => {
 
         const controller = new AbortController();
         const signal = controller.signal;
-        delay(2);
 
-        fetch('http://192.168.1.6:3000/api/event/all', { signal: signal })
-            .then((response) => response.json() )
+        fetch('http://192.168.1.14:3000/api/event/all', { signal: signal })
+            .then((response) => response.json())
             .then((json) => {
                 console.log(json)
                 onChageEvents(json)
@@ -26,10 +23,10 @@ const CursosScreen = ({ navigation, route }) => {
             .catch((error) => {
                 if (error.name === "AbortError") {
                     console.log("successfully aborted");
-                  } else {
+                } else {
                     alert(error)
-                  }
-                })
+                }
+            })
             .finally(() => {
                 controller.abort();
                 setLoading(false)
@@ -43,7 +40,9 @@ const CursosScreen = ({ navigation, route }) => {
             <StatusBar style="auto" />
 
             <View style={styles.centeredContainer} >
-                <Text style={styles.title}>Cursos</Text>
+                <Text style={styles.title}>Eventos</Text>
+                <View style={styles.blankSpace} />
+
                 {isLoading ?
                     <ActivityIndicator
                         color={"#841584"}
@@ -53,9 +52,15 @@ const CursosScreen = ({ navigation, route }) => {
                     data={mEvents}
                     //keyExtractor={({ id }, index => id)}
                     renderItem={({ item }) =>
-                    (<TouchableOpacity>
+                    (<TouchableOpacity onPress={() => {
+                        setLoading(true)
+                        onPressEvent(item.id, navigation,setLoading);
+                    }
+                    }>
                         <View>
-                            <Text>{item.descripcion}</Text>
+                            <Text style={styles.subtitle} >Inicio: {item.fecha_inicio}</Text>
+                            <Text>Ubicación: {item.lugar}</Text>
+                            <Text style={styles.eventDescription}>{item.descripcion}</Text>
                             <View style={styles.separator} />
                         </View>
                     </TouchableOpacity>
@@ -65,6 +70,35 @@ const CursosScreen = ({ navigation, route }) => {
         </View>
     );
 }
+
+const onPressEvent = (eventId, navigation,setLoading) => {
+
+    var courses = []
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    fetch('http://192.168.1.14:3000/api/course/getByEventId/' + eventId, {
+        method: 'GET'
+    }, { signal: signal })
+
+        .then((response) => response.json())
+        .then((json) => {
+            courses = json
+        })
+        .catch((error) => {
+            if (error.name === "AbortError") {
+                console.log("successfully aborted");
+            } else {
+                alert(error)
+            }
+        })
+        .finally(() => {
+            controller.abort();
+            setLoading(false)
+            navigation.navigate('EventosSceen', { cursos: courses })
+        });
+}
+
 
 
 
@@ -94,6 +128,18 @@ const styles = StyleSheet.create({
     title: {
         fontWeight: 'bold',
         fontSize: 30
+    },
+    blankSpace: {
+        marginVertical: 30,
+    },
+    subtitle: {
+        fontWeight: 'bold',
+        fontSize: 18
+    },
+    eventDescription: {
+        marginTop: 10,
+        fontWeight: '900',
+        fontSize: 13
     },
     container: {
         flex: 1,

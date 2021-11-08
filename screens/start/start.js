@@ -1,11 +1,15 @@
 import { StatusBar } from 'expo-status-bar';
-import { Button, StyleSheet, Text, View, TextInput } from 'react-native';
-import React from 'react';
+import { Button, StyleSheet, Text, View, TextInput, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
 
 
 const RegisterScreen = ({ navigation, route }) => {
-    const [username, onChangeUsername] = React.useState("username");
-    const [password, onChangePassword] = React.useState("Password");
+    const [username, onChangeUsername] = React.useState("");
+    const [password, onChangePassword] = React.useState("");
+    const [name, onChangeName] = React.useState("");
+    const [lastname, onChangeLastname] = React.useState("");
+    const [phone, onChangePhone] = React.useState("");
+    const [isLoading, setLoading] = useState(false);
 
     return (
         <View style={styles.container}>
@@ -13,19 +17,57 @@ const RegisterScreen = ({ navigation, route }) => {
 
             <View style={styles.centeredContainer} >
                 <Text style={styles.title}>CursApp</Text>
-                <Text>Registro</Text>
+                <Text>Registrate en la plataforma</Text>
+            </View>
+            <View style={styles.blankSpace} />
+
+           
+            <View>
+                <Text>Nombre</Text>
+                <TextInput
+                    style={styles.input}
+                    onChangeText={onChangeName}
+                    value={name}
+                />
+            </View>
+            <View>
+                <Text>Apellido</Text>
+                <TextInput
+                    style={styles.input}
+                    onChangeText={onChangeLastname}
+                    value={lastname}
+                />
+            </View>
+            <View>
+                <Text>Teléfono</Text>
+                <TextInput
+                    style={styles.input}
+                    onChangeText={onChangePhone}
+                    value={phone}
+                />
+            </View>
+            <View>
+                <Text>Correo Electrónico</Text>
+                <TextInput
+                    style={styles.input}
+                    onChangeText={onChangeUsername}
+                    value={username}
+                />
+            </View>
+            <View>
+                <Text>Contraseña</Text>
+                <TextInput
+                    style={styles.input}
+                    secureTextEntry={true}
+                    onChangeText={onChangePassword}
+                    value={password}
+                />
             </View>
 
-            <TextInput
-                style={styles.input}
-                onChangeText={onChangeUsername}
-                value={username}
-            />
-            <TextInput
-                style={styles.input}
-                onChangeText={onChangePassword}
-                value={password}
-            />
+            {isLoading ?
+                <ActivityIndicator
+                    color={"#841584"}
+                    style={styles.loader} /> : []}
 
             <Button
                 title="REGISTRARSE"
@@ -47,8 +89,9 @@ const RegisterScreen = ({ navigation, route }) => {
 
 
 const LoginScreen = ({ navigation, route }) => {
-    const [username, onChangeUsername] = React.useState("username");
-    const [password, onChangePassword] = React.useState("Password");
+    const [username, onChangeUsername] = React.useState("");
+    const [password, onChangePassword] = React.useState("");
+    const [isLoading, setLoading] = useState(false);
 
     return (
         <View style={styles.container}>
@@ -56,26 +99,43 @@ const LoginScreen = ({ navigation, route }) => {
 
             <View style={styles.centeredContainer} >
                 <Text style={styles.title}>CursApp</Text>
-                <Text>Login</Text>
+                <Text>Encuentra los cursos que necesitas en un solo lugar</Text>
+            </View>
+            <View style={styles.blankSpace} />
+            <View>
+                <Text>Correo Electrónico</Text>
+                <TextInput
+                    style={styles.input}
+                    onChangeText={onChangeUsername}
+                    value={username}
+                />
             </View>
 
-            <TextInput
-                style={styles.input}
-                onChangeText={onChangeUsername}
-                value={username}
-            />
-            <TextInput
-                style={styles.input}
-                onChangeText={onChangePassword}
-                value={password}
-            />
+            <View>
+                <Text>Contraseña</Text>
+                <TextInput
+                    style={styles.input}
+                    secureTextEntry={true}
+                    onChangeText={onChangePassword}
+                    value={password}
+                />
+            </View>
+
+            {isLoading ?
+                <ActivityIndicator
+                    color={"#841584"}
+                    style={styles.loader} /> : []}
+
             <Button
                 style={styles.buttonPadding}
                 title="ENTRAR"
                 color="#841584"
                 accessibilityLabel="Learn more about this purple button"
-                onPress={() =>
-                    navigation.navigate('CursosScreen', { name: 'Jane' })
+                onPress={() => {
+                    setLoading(true)
+                    onLogin(username, password, navigation, setLoading);
+                }
+
                 }
             />
             <View style={styles.separator} />
@@ -91,6 +151,55 @@ const LoginScreen = ({ navigation, route }) => {
         </View>
     );
 };
+
+
+const onLogin = (email, password, navigation, setLoading) => {
+    const controller = new AbortController();
+
+    var success = false;
+    var message = "";
+    const signal = controller.signal;
+
+    const details = {
+        email: email,
+        password: password,
+    };
+
+    const formBody = Object.keys(details).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(details[key])).join('&');
+
+    fetch('http://192.168.1.14:3000/api/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        },
+        body: formBody
+    }, { signal: signal })
+
+        .then((response) => response.json())
+        .then((json) => {
+            console.log(json["mensaje"])
+            success = json["success"]
+            message = json["mensaje"]
+        })
+        .catch((error) => {
+            isLoading = false
+            if (error.name === "AbortError") {
+                console.log("successfully aborted");
+            } else {
+                alert(error)
+            }
+        })
+        .finally(() => {
+            controller.abort();
+            setLoading(false)
+            if (success == true) {
+                navigation.navigate('CursosScreen', { name: 'Jane' })
+            } else {
+                alert(message)
+            }
+        });
+
+}
 
 
 
@@ -146,6 +255,9 @@ const styles = StyleSheet.create({
         marginVertical: 8,
         borderBottomColor: '#737373',
         borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    blankSpace: {
+        marginVertical: 30,
     },
 });
 
